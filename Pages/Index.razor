@@ -1,3 +1,131 @@
 ﻿@page "/"
 
-<h1>Hello, world!</h1>
+
+<PageTitle>Index</PageTitle>
+
+<div class="d-flex flex-column ma-10">
+    <MudImage Src="@("https://image.tmdb.org/t/p/w440_and_h660_face/" + imgAvts[profileIndex])" Height="200" Width="200"
+        Class="rounded-lg" ObjectFit="ObjectFit.Cover" />
+    <h3 class="mt-4">My name: @names[profileIndex]</h3>
+    <h3>My peerID: @(hubConnection == null ? "..." : hubConnection.ConnectionId)</h3>
+
+    <MudTextField Class="my-4" @bind-Value="remoteId" Placeholder="RemoteID" Variant="Variant.Outlined" />
+
+    <div class="d-flex">
+        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Call" DisableElevation="true"
+            Color="Color.Primary" OnClick=@(() => CallPeer("voice")) Class="mr-4">
+            Voice Call
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Rounded.Videocam" DisableElevation="true"
+            Color="Color.Primary" OnClick=@(() => CallPeer("video"))>
+            Video Call
+        </MudButton>
+    </div>
+
+</div>
+
+
+@using Microsoft.AspNetCore.SignalR.Client;
+@using AgoraRTC.Components
+@using AgoraRTC.Models
+
+@inject IJSRuntime JSRuntime
+@inject IDialogService DialogService
+
+@code {
+    private string remoteId = "";
+
+    private string[] names = new string[]
+    {
+"Trần Lê Hoàng Lâm",
+"Lê Bảo Như",
+"Bùi Cường",
+"Huỳnh Ngọc Ý Nhi",
+"Totoro",
+"Mononokai",
+"Slime",
+    };
+
+    private string[] imgAvts = new string[]
+    {
+"reEMJA1uzscCbkpeRJeTT2bjqUp.jpg",
+"kTs2WNZOukpWdNhoRlH94pSJ3xf.jpg",
+"dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg",
+"vc2TMwHqdjkqwRNkmAo2Ags1f29.jpg",
+"1h4OqxXYRRM2FA3Nu6GBgD3puJj.jpg",
+"39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
+"lOa1IUp3AFVo6h9b17KA20r4E5s.jpg",
+    };
+
+    private int profileIndex;
+
+    private HubConnection? hubConnection;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl("http://localhost:5275/call-hub")
+        .Build();
+
+        await hubConnection.StartAsync();
+
+        hubConnection.On<PeerInfo, string>("inviteCall", async (callerInfo, typeCall) =>
+        {
+            Console.WriteLine("Nhận được cuộc gọi từ " + callerInfo.Name);
+            await OpenNotificationDialog(callerInfo, typeCall);
+        });
+    }
+
+    protected override void OnParametersSet()
+    {
+        Random random = new Random();
+        profileIndex = random.Next(0, 7);
+    }
+
+    private async Task CallPeer(string typeCall)
+    {
+        PeerInfo myInfo = new PeerInfo(names[profileIndex], imgAvts[profileIndex]);
+        var roomId = hubConnection!.ConnectionId + remoteId;
+        await hubConnection.SendAsync("JoinRoom", myInfo, roomId);
+        await hubConnection.SendAsync("SendCallTo", remoteId, typeCall, roomId);
+    }
+
+
+    [JSInvokable]
+    public async Task<string> OpenNotificationDialog(PeerInfo callerInfo, string typeCall)
+    {
+
+        DialogOptions options = new DialogOptions
+            {
+                FullWidth = false,
+                MaxWidth = MaxWidth.ExtraSmall,
+                CloseOnEscapeKey = false,
+                DisableBackdropClick = true,
+                NoHeader = true,
+            };
+
+        DialogParameters keyValues = new DialogParameters();
+        keyValues.Add("callerName", callerInfo.Name);
+        keyValues.Add("callerAvt", callerInfo.AvatarUrl);
+        keyValues.Add("typeCall", typeCall);
+
+        var dialogResult = DialogService.Show<CallDialog>("", keyValues, options);
+        var result = await dialogResult.Result;
+
+        if (result.Canceled)
+        {
+            // Từ chối cuộc gọi
+            // Console.WriteLine("Reject call");
+            return "reject";
+        }
+        else
+        {
+            // Chấp nhận cuộc gọi
+            // Console.WriteLine("Accept Call");
+            return "accept";
+        }
+    }
+}
