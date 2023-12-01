@@ -26,6 +26,15 @@
 </div>
 
 
+@inject IDialogService DialogService
+
+
+<MudButton @onclick="@(() => OpenNotificationDialog(myInfo, "voice"))" Variant="Variant.Filled" Color="Color.Primary">
+    Open Simple Dialog
+</MudButton>
+
+
+
 @using Microsoft.AspNetCore.SignalR.Client;
 @using AgoraRTC.Components
 @using AgoraRTC.Models
@@ -34,6 +43,7 @@
 @inject IDialogService DialogService
 
 @code {
+    PeerInfo myInfo = new PeerInfo("abc", "reEMJA1uzscCbkpeRJeTT2bjqUp.jpg");
     private string remoteId = "";
 
     private string[] names = new string[]
@@ -62,7 +72,6 @@
 
     private HubConnection? hubConnection;
 
-
     protected override async Task OnInitializedAsync()
     {
 
@@ -72,10 +81,9 @@
 
         await hubConnection.StartAsync();
 
-        hubConnection.On<PeerInfo, string>("inviteCall", async (callerInfo, typeCall) =>
+        hubConnection.On<PeerInfo, string>("inviteCall", (callerInfo, typeCall) =>
         {
-            Console.WriteLine("Nhận được cuộc gọi từ " + callerInfo.Name);
-            await OpenNotificationDialog(callerInfo, typeCall);
+            InvokeAsync(() => OpenNotificationDialog(callerInfo, typeCall));
         });
     }
 
@@ -89,16 +97,16 @@
     {
         PeerInfo myInfo = new PeerInfo(names[profileIndex], imgAvts[profileIndex]);
         var roomId = hubConnection!.ConnectionId + remoteId;
+        
         await hubConnection.SendAsync("JoinRoom", myInfo, roomId);
         await hubConnection.SendAsync("SendCallTo", remoteId, typeCall, roomId);
     }
 
 
-    [JSInvokable]
-    public async Task<string> OpenNotificationDialog(PeerInfo callerInfo, string typeCall)
+    public async void OpenNotificationDialog(PeerInfo callerInfo, string typeCall)
     {
-
-        DialogOptions options = new DialogOptions
+        Console.WriteLine("Nhận được cuộc gọi từ " + callerInfo.Name);
+                DialogOptions options = new DialogOptions
             {
                 FullWidth = false,
                 MaxWidth = MaxWidth.ExtraSmall,
@@ -119,13 +127,13 @@
         {
             // Từ chối cuộc gọi
             // Console.WriteLine("Reject call");
-            return "reject";
+            
         }
         else
         {
             // Chấp nhận cuộc gọi
             // Console.WriteLine("Accept Call");
-            return "accept";
         }
+
     }
 }
