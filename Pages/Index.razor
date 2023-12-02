@@ -28,13 +28,6 @@
 
 @inject IDialogService DialogService
 
-
-<MudButton @onclick="@(() => OpenNotificationDialog(myInfo, "voice"))" Variant="Variant.Filled" Color="Color.Primary">
-    Open Simple Dialog
-</MudButton>
-
-
-
 @using Microsoft.AspNetCore.SignalR.Client;
 @using AgoraRTC.Components
 @using AgoraRTC.Models
@@ -43,8 +36,6 @@
 @inject IDialogService DialogService
 
 @code {
-    PeerInfo myInfo = new PeerInfo("abc", "reEMJA1uzscCbkpeRJeTT2bjqUp.jpg");
-    private string remoteId = "";
 
     private string[] names = new string[]
     {
@@ -68,23 +59,38 @@
 "lOa1IUp3AFVo6h9b17KA20r4E5s.jpg",
     };
 
+    private string remoteId = "";
+
     private int profileIndex;
+
+    private bool isIdle = true;
 
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-
         hubConnection = new HubConnectionBuilder()
         .WithUrl("http://localhost:5275/call-hub")
         .Build();
 
         await hubConnection.StartAsync();
 
-        hubConnection.On<PeerInfo, string>("inviteCall", (callerInfo, typeCall) =>
+        hubConnection.On<string, PeerInfo, string, string>("inviteCall", (callerId, callerInfo, typeCall, roomId) =>
         {
-            InvokeAsync(() => OpenNotificationDialog(callerInfo, typeCall));
+            @* Console.WriteLine("Nhận cuộc gọi từ " + callerInfo.Name); *@
+            if (isIdle)
+            {
+                isIdle = false;
+                InvokeAsync(() => OpenNotificationDialog(callerId, callerInfo, typeCall, roomId));
+            }
+            else
+            {
+                // Người nhận đang ở trong cuộc gọi khác
+                hubConnection!.SendAsync("SendResponseCallTo", callerId, "inAnotherCall");
+            }
+
         });
+
     }
 
     protected override void OnParametersSet()
@@ -95,18 +101,27 @@
 
     private async Task CallPeer(string typeCall)
     {
-        PeerInfo myInfo = new PeerInfo(names[profileIndex], imgAvts[profileIndex]);
         var roomId = hubConnection!.ConnectionId + remoteId;
-        
-        await hubConnection.SendAsync("JoinRoom", myInfo, roomId);
-        await hubConnection.SendAsync("SendCallTo", remoteId, typeCall, roomId);
+
+        isIdle = false;
+
+        await JSRuntime.InvokeVoidAsync(
+        "moCuaSoGoiDien",
+        hubConnection!.ConnectionId,
+        names[profileIndex],
+        imgAvts[profileIndex],
+        remoteId,
+        "Tăng Thị Kim Nguyên",
+        typeCall,
+        DotNetObjectReference.Create(this)
+        );
+
     }
 
 
-    public async void OpenNotificationDialog(PeerInfo callerInfo, string typeCall)
+    public async void OpenNotificationDialog(string callerId, PeerInfo callerInfo, string typeCall, string roomId)
     {
-        Console.WriteLine("Nhận được cuộc gọi từ " + callerInfo.Name);
-                DialogOptions options = new DialogOptions
+        DialogOptions options = new DialogOptions
             {
                 FullWidth = false,
                 MaxWidth = MaxWidth.ExtraSmall,
@@ -126,14 +141,33 @@
         if (result.Canceled)
         {
             // Từ chối cuộc gọi
-            // Console.WriteLine("Reject call");
-            
+            await hubConnection!.SendAsync("SendResponseCallTo", callerId, "rejectCall");
+            isIdle = true;
         }
         else
         {
             // Chấp nhận cuộc gọi
             // Console.WriteLine("Accept Call");
+            await hubConnection!.SendAsync("SendResponseCallTo", callerId, "acceptCall");
+
+            await JSRuntime.InvokeVoidAsync(
+            "joinRoomGoiDien",
+            roomId,
+            names[profileIndex],
+            imgAvts[profileIndex],
+            typeCall
+            );
+
+
         }
 
     }
+
+    [JSInvokable]
+    public void setIdleToTrue()
+    {
+        @* Console.WriteLine("setIdleToTrue"); *@
+        isIdle = true;
+    }
+
 }

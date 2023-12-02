@@ -1,4 +1,6 @@
-function moCuaSoGoiDien(callerName, callerAvt, remoteId, receiverName, typeCall) {
+var myInstanceObject;
+
+function moCuaSoGoiDien(callerId, callerName, callerAvt, receiverId, receiverName, typeCall, instanceObject) {
     //const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
     //const dualScreenTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
 
@@ -20,12 +22,14 @@ function moCuaSoGoiDien(callerName, callerAvt, remoteId, receiverName, typeCall)
 
     //if (window.focus) newWindow.focus();
 
+    myInstanceObject = instanceObject;
+
     const top = (screen.height - 800) / 2;
     const left = (screen.width - 500) / 2;
 
     // Cửa sổ con
-    const roomId = myId + "." + remoteId;
-    var urlToOpen = `http://localhost:5241//groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}/${receiverName}`;
+    const roomId = callerId + "." + receiverId;
+    var urlToOpen = `http://localhost:5241/groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}/${receiverName}`;
     var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=800, height=500");
 
     // Đăng ký sự kiện nhận thông điệp từ cửa sổ con
@@ -39,15 +43,24 @@ function moCuaSoGoiDien(callerName, callerAvt, remoteId, receiverName, typeCall)
     //}
 }
 
-function receiveMessageFromGroupCall(event) {
-    // Kiểm tra xem thông điệp có phải là từ cửa sổ con đóng hay không
-    if (event.data === 'childWindowCancle') {
+function joinRoomGoiDien(roomId, callerName, callerAvt, typeCall) {
+    const top = (screen.height - 800) / 2;
+    const left = (screen.width - 500) / 2;
 
-        console.log("Đã đóng cửa sổ con");
-        console.log("Khởi tạo lại Peer để nhận cuộc gọi");
-        // Tạo lại peer dùng để nhận thông báo cuộc gọi đến
-        initPeer(true);
-        thietLapLangNgheCuocGoi();
+    var urlToOpen = `http://localhost:5241/groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}`;
+    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=800, height=500");
+
+    window.addEventListener('message', receiveMessageFromGroupCall, false);
+}
+
+function receiveMessageFromGroupCall(event) {
+    // Kiểm tra xem thông điệp có phải là từ cửa sổ con đã đóng hay không
+    if (event.data == 'childWindowCancle') {
+
+        console.log("Đã kết thúc cuộc gọi");
+        console.log("Thiết lập trạng thái isIdle = true");
+
+        myInstanceObject.invokeMethodAsync("setIdleToTrue")
 
         // Gỡ Đăng ký sự kiện nhận thông điệp từ cửa sổ con
         window.removeEventListener('message', receiveMessageFromGroupCall, false);

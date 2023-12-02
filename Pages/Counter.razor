@@ -1,0 +1,20 @@
+@page "/counter/{roomId}/{peerName}/{peerAvatar}/{typeCall}"
+
+<h2>Counter Page</h2>
+
+@code {
+
+    [Parameter]
+    public string roomId { get; set; } = "";
+
+    public string? peerId { get; set; }
+
+    [Parameter]
+    public string peerName { get; set; } = "";
+
+    [Parameter]
+    public string peerAvatar { get; set; } = "";
+
+    [Parameter]
+    public string typeCall { get; set; } = "";
+}
