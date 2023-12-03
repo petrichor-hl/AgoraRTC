@@ -6,23 +6,34 @@
 {
     <div class="container">
 
-    @if (receiverAvt != null)
+    @if (status == "Cuộc gọi đã kết thúc")
         {
-            <img src="@receiverAvt" class="avatar-200 mb-3" />
+            <div style="height: 100%; padding: 2%;">
+                <img src="assets/image/call_banner.jpeg" class="ending-call-banner" />
+            </div>
+        }
+        else
+        {
+            @if (receiverAvt != null)
+            {
+                <img src="@receiverAvt" class="avatar-200 mb-3" />
+            }
+
+            @if (receiverName != null)
+            {
+                <p class="mud-typography-h3" style="color: rgba(89,74,226,1); margin-bottom: 4px">
+                    @receiverName
+                </p>
+            }
+            <p class="mud-typography-h5">@status</p>
         }
 
-        @if (receiverName != null)
-        {
-            <p class="mud-typography-h3" style="color: rgba(89,74,226,1); margin-bottom: 4px">
-                @receiverName
-            </p>
-        }
-        <p class="mud-typography-h5">@status</p>
     </div>
+
 }
 else
 {
-    <div class="grid-container px-4 pt-4" style="padding-bottom: 112px">
+    <div class="grid-container px-4 pt-4" style="padding-bottom: 114px">
     <div id="peer-@hubRoomConnection!.ConnectionId" class="grid-item relative">
         <div class="d-flex flex-column justify-center align-center absolute avatar-card"
             style="@(isVideoOn ? "z-index: 0" : "z-index: 1")">
@@ -75,7 +86,7 @@ else
         </button>
 
         <button id="call-end-btn" class="button-27" role="button"
-            style="background-color: rgba(244,67,54,1); margin-inline: 20px" @onclick="CallEnd">
+            style="background-color: rgba(244,67,54,1); margin-inline: 20px" onclick="window.close()">
             <svg xmlns="http:www.w3.org/2000/svg" height="32" width="32"
                 viewBox="0 0 640 512"><!--!Font Awesome Free 6.5.0 by @fontawesome - https:fontawesome.com License - https:fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
                 <path fill="#ffffff"
@@ -109,7 +120,7 @@ else
     else
     {
         <button role="button" class="button-27 rounded-circle pa-3" style="background-color: rgba(150,150,150,1)"
-            @onclick="Cancle">
+            onclick="window.close()">
             <svg xmlns="http://www.w3.org/2000/svg" height="32" width="32"
                 viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
                 <path fill="#ffffff"
@@ -127,6 +138,9 @@ else
 
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
+
+@implements IDisposable
+
 @code {
 
     [Parameter]
@@ -161,6 +175,16 @@ else
     private HubConnection? hubRoomConnection;
 
     private Dictionary<string, PeerInfo> peersInRoom = new();
+
+    protected override void OnInitialized()
+    {
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("abc");
+    }
 
     private async Task setupCallHub()
     {
@@ -223,6 +247,21 @@ else
             newPeer.Name + " đã tham gia cuộc gọi", Severity.Success
             );
         });
+
+        hubRoomConnection.On<string>("PeerLeave", connectionId =>
+        {
+            @* Console.WriteLine("Event NewPeerJoin"); *@
+            peersInRoom.Remove(connectionId);
+            if (peersInRoom.Count == 0)
+            {
+                status = "Cuộc gọi đã kết thúc";
+
+                hubRoomConnection!.SendAsync("LeaveRoom", roomId);
+                Console.WriteLine("peersInRoom.Count == 0 => JSRuntime.InvokeVoidAsync(\"finishCall\");");
+                JSRuntime.InvokeVoidAsync("finishCall");
+            }
+            InvokeAsync(StateHasChanged);
+        });
     }
 
     protected override void OnParametersSet()
@@ -243,8 +282,6 @@ else
         {
             isVideoOn = true; ;
         }
-
-
     }
 
     protected override async Task OnParametersSetAsync()
@@ -273,17 +310,22 @@ else
         JSRuntime.InvokeVoidAsync("toggleVideo");
     }
 
-    public void CallEnd()
+    public async void Dispose()
     {
-        hubRoomConnection!.SendAsync("LeaveRoom", roomId);
-        hubCallConnection!.SendAsync("LeaveRoom", roomId);
-        JSRuntime.InvokeVoidAsync("finishCall");
-        JSRuntime.InvokeVoidAsync("window.close");
-    }
+        // Rời khỏi phòng nếu chưa rời
+        await hubRoomConnection!.SendAsync("LeaveRoom", roomId);
 
-    public async void Cancle()
-    {
-        await JSRuntime.InvokeVoidAsync("window.close");
+        if (hubCallConnection != null)
+        {
+            await hubCallConnection.DisposeAsync();
+            hubCallConnection = null;
+        }
+
+        if (hubRoomConnection != null)
+        {
+            await hubRoomConnection.DisposeAsync();
+            hubRoomConnection = null;
+        }
     }
 
 }

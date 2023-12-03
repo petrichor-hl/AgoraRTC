@@ -34,6 +34,11 @@
     background-color: whitesmoke;
 }
 
+.ending-call-banner {
+    height: 100%;
+    border-radius: 14px;
+}
+
 .mud-typography-h3 {
     font-size: 1.6rem;
     line-height: 1.167;

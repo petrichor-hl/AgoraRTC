@@ -1,5 +1,5 @@
 const APP_ID = "c5ba0d5021ca49a4989abd70a2bc0ea9";
-const TOKEN = "007eJxTYPhaHFbduthQM47/05aivptWxm89+o2VZhyp/VR15uq21dsUGJJNkxINUkwNjAyTE00sgcjCMjEpxdwg0Sgp2SA10dJTJju1IZCR4byvOwMjFIL4LAy5iZl5DAwAtIggkA==";
+const TOKEN = "007eJxTYLg1ocrsbXCkE8fO+aqdzEvm1f937vtyvvJL7svKwldiT3gUGJJNkxINUkwNjAyTE00sgcjCMjEpxdwg0Sgp2SA10XK2e05qQyAjwxepfhZGBggE8VkYchMz8xgYAMM1IRk=";
 
 const CHANNEL = "main";
 
@@ -16,7 +16,7 @@ let remoteUsers = {}
 
 async function joinAndDisplayLocalStream(uid, typeCall) {
 
-    client.on('user-published', handleUserJoined)
+    client.on('user-published', handleUserJoined);
 
     localUid = uid;
 
@@ -69,8 +69,8 @@ async function toggleVideo() {
         tức là video-btn đang turn off
         => Thêm video track, play video & kết thúc
         */
-        localTracks.push(await AgoraRTC.createCameraVideoTrack())
-        localTracks[1].play(`peer-${localUid}`)
+        localTracks.push(await AgoraRTC.createCameraVideoTrack());
+        localTracks[1].play(`peer-${localUid}`);
         await client.publish([localTracks[1]]);
         return;
     }
