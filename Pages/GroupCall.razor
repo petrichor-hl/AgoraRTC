@@ -160,7 +160,7 @@ else
     private HubConnection? hubCallConnection;
     private HubConnection? hubRoomConnection;
 
-    private Dictionary<string, PeerInfo> peersInRoom = [];
+    private Dictionary<string, PeerInfo> peersInRoom = new();
 
     private async Task setupCallHub()
     {

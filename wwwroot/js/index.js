@@ -43,16 +43,6 @@ function moCuaSoGoiDien(callerId, callerName, callerAvt, receiverId, receiverNam
     //}
 }
 
-function joinRoomGoiDien(roomId, callerName, callerAvt, typeCall) {
-    const top = (screen.height - 800) / 2;
-    const left = (screen.width - 500) / 2;
-
-    var urlToOpen = `http://localhost:5241/groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}`;
-    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=800, height=500");
-
-    window.addEventListener('message', receiveMessageFromGroupCall, false);
-}
-
 function receiveMessageFromGroupCall(event) {
     // Kiểm tra xem thông điệp có phải là từ cửa sổ con đã đóng hay không
     if (event.data == 'childWindowCancle') {
@@ -65,5 +55,16 @@ function receiveMessageFromGroupCall(event) {
         // Gỡ Đăng ký sự kiện nhận thông điệp từ cửa sổ con
         window.removeEventListener('message', receiveMessageFromGroupCall, false);
     }
+}
+
+
+function joinRoomGoiDien(roomId, callerName, callerAvt, typeCall) {
+    const top = (screen.height - 800) / 2;
+    const left = (screen.width - 500) / 2;
+
+    var urlToOpen = `http://localhost:5241/groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}`;
+    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=800, height=500");
+
+    window.addEventListener('message', receiveMessageFromGroupCall, false);
 }
 

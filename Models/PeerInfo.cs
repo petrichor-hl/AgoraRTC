@@ -1,8 +1,17 @@
 namespace AgoraRTC.Models
 {
-    public class PeerInfo(string name, string avatarUrl)
+    public class PeerInfo
     {
-        public string Name { get; set; } = name;
-        public string AvatarUrl { get; set; } = avatarUrl;
+        public string Name { get; set; }
+        public string AvatarUrl { get; set; }
+
+        // Parameterized constructor
+        public PeerInfo(string name, string avatarUrl)
+        {
+            Name = name;
+            AvatarUrl = avatarUrl;
+        }
     }
+
+    
 }
