@@ -3,6 +3,10 @@
 
 <PageTitle>Index</PageTitle>
 
+<audio id="audioPlayer" loop>
+    <source src="assets/audio/nhac_chuong_do_choi_dien_thoai.mp3" type="audio/mp3" />
+</audio>
+
 <div class="d-flex flex-column ma-10">
     <MudImage Src="@("https://image.tmdb.org/t/p/w440_and_h660_face/" + imgAvts[profileIndex])" Height="200" Width="200"
         Class="rounded-lg" ObjectFit="ObjectFit.Cover" />
@@ -116,6 +120,7 @@
         DotNetObjectReference.Create(this)
         );
 
+        await JSRuntime.InvokeVoidAsync("phatNhacChuong");
     }
 
 
@@ -167,7 +172,7 @@
     [JSInvokable]
     public void setIdleToTrue()
     {
-        @* Console.WriteLine("setIdleToTrue"); *@
+        // Console.WriteLine("setIdleToTrue");
         isIdle = true;
     }
 

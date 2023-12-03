@@ -16,7 +16,11 @@ let remoteUsers = {}
 
 async function joinAndDisplayLocalStream(uid, typeCall) {
 
-    client.on('user-published', handleUserJoined);
+    client.on('user-published', handleUserPublished);
+
+    client.on('user-left', (user) => {
+        console.log(user.uid + " has left the chanel");
+    });
 
     localUid = uid;
 
@@ -39,8 +43,7 @@ async function joinAndDisplayLocalStream(uid, typeCall) {
     }
 }
 
-async function handleUserJoined(user, mediaType) {
-    remoteUsers[user.uid] = user;
+async function handleUserPublished(user, mediaType) {
     await client.subscribe(user, mediaType)
 
     if (mediaType == 'video') {

@@ -1,4 +1,10 @@
 var myInstanceObject;
+var audio;
+
+function phatNhacChuong() {
+    audio = document.getElementById("audioPlayer");
+    audio.play();
+}
 
 function moCuaSoGoiDien(callerId, callerName, callerAvt, receiverId, receiverName, typeCall, instanceObject) {
     //const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
@@ -58,6 +64,12 @@ function joinRoomGoiDien(roomId, callerName, callerAvt, typeCall, instanceObject
 
 
 function receiveMessageFromGroupCall(event) {
+
+    if (event.data == 'tatNhacChuong') {
+        console.log("Tắt nhạc chuông");
+        audio.pause();
+    }
+
     // Kiểm tra xem thông điệp có phải là từ cửa sổ con đã đóng hay không
     if (event.data == 'childWindowCancle') {
 

@@ -176,14 +176,9 @@ else
 
     private Dictionary<string, PeerInfo> peersInRoom = new();
 
-    protected override void OnInitialized()
-    {
-
-    }
-
     protected override async Task OnInitializedAsync()
     {
-        await JSRuntime.InvokeVoidAsync("abc");
+        await JSRuntime.InvokeVoidAsync("thietLapKhiDongCuocGoi");
     }
 
     private async Task setupCallHub()
@@ -196,13 +191,15 @@ else
 
         hubCallConnection.On<string>("receiverResponse", response =>
         {
+             JSRuntime.InvokeVoidAsync("tatNhacChuong");
 
             switch (response)
             {
+
                 case "acceptCall":
                     break;
                 case "rejectCall":
-                    status = "Từ chối cuộc gọi";
+                    status = "Không trả lời";
                     hubRoomConnection!.SendAsync("LeaveRoom", roomId);
                     JSRuntime.InvokeVoidAsync("finishCall");
                     break;
@@ -214,7 +211,8 @@ else
                     break;
             }
 
-            InvokeAsync(StateHasChanged);
+
+             InvokeAsync(StateHasChanged);
 
         });
 
@@ -244,20 +242,27 @@ else
             peersInRoom.Add(connectionId, newPeer);
             InvokeAsync(StateHasChanged);
             Snackbar.Add(
-            newPeer.Name + " đã tham gia cuộc gọi", Severity.Success
+                newPeer.Name + " đã tham gia cuộc gọi", 
+                Severity.Normal,
+                config => 
+                { 
+                    config.ShowCloseIcon = false;
+                    config.VisibleStateDuration = 4000;
+                    config.HideTransitionDuration = 300;
+                    config.ShowTransitionDuration = 300;
+                }
             );
         });
 
         hubRoomConnection.On<string>("PeerLeave", connectionId =>
         {
-            @* Console.WriteLine("Event NewPeerJoin"); *@
+            @* Console.WriteLine("Event PeerLeave"); *@
             peersInRoom.Remove(connectionId);
             if (peersInRoom.Count == 0)
             {
                 status = "Cuộc gọi đã kết thúc";
 
                 hubRoomConnection!.SendAsync("LeaveRoom", roomId);
-                Console.WriteLine("peersInRoom.Count == 0 => JSRuntime.InvokeVoidAsync(\"finishCall\");");
                 JSRuntime.InvokeVoidAsync("finishCall");
             }
             InvokeAsync(StateHasChanged);
