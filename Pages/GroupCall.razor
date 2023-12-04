@@ -191,11 +191,10 @@ else
 
         hubCallConnection.On<string>("receiverResponse", response =>
         {
-             JSRuntime.InvokeVoidAsync("tatNhacChuong");
+            JSRuntime.InvokeVoidAsync("tatNhacChuong");
 
             switch (response)
             {
-
                 case "acceptCall":
                     break;
                 case "rejectCall":
@@ -212,11 +211,13 @@ else
             }
 
 
-             InvokeAsync(StateHasChanged);
+            InvokeAsync(StateHasChanged);
 
         });
 
     }
+
+    bool isFirst = true;
 
     private async Task setupRoomHub()
     {
@@ -226,15 +227,21 @@ else
 
         await hubRoomConnection.StartAsync();
 
-        await JSRuntime.InvokeVoidAsync("joinAndDisplayLocalStream", hubRoomConnection!.ConnectionId, typeCall);
-
-        hubRoomConnection.On<Dictionary<string, PeerInfo>>("ListPeerdInRoom", peers =>
+        hubRoomConnection.On<Dictionary<string, PeerInfo>>("ListPeerdInRoom", async (peers) =>
         {
             @* Console.WriteLine("ListPeerdInRoom"); *@
             this.peersInRoom = peers;
-            InvokeAsync(StateHasChanged);
+            await InvokeAsync(StateHasChanged);
             @* peers.ForEach((p) => Console.WriteLine(p.Name)); *@
+
+            if (isFirst)
+            {
+                isFirst = false;
+                await JSRuntime.InvokeVoidAsync("joinAndDisplayLocalStream", hubRoomConnection!.ConnectionId, typeCall);
+            }
         });
+
+
 
         hubRoomConnection.On<string, PeerInfo>("NewPeerJoin", (connectionId, newPeer) =>
         {
@@ -242,15 +249,15 @@ else
             peersInRoom.Add(connectionId, newPeer);
             InvokeAsync(StateHasChanged);
             Snackbar.Add(
-                newPeer.Name + " đã tham gia cuộc gọi", 
-                Severity.Normal,
-                config => 
-                { 
-                    config.ShowCloseIcon = false;
-                    config.VisibleStateDuration = 4000;
-                    config.HideTransitionDuration = 300;
-                    config.ShowTransitionDuration = 300;
-                }
+            newPeer.Name + " đã tham gia cuộc gọi",
+            Severity.Normal,
+            config =>
+            {
+                config.ShowCloseIcon = false;
+                config.VisibleStateDuration = 4000;
+                config.HideTransitionDuration = 300;
+                config.ShowTransitionDuration = 300;
+            }
             );
         });
 
@@ -285,7 +292,7 @@ else
         }
         else
         {
-            isVideoOn = true; ;
+            isVideoOn = true;
         }
     }
 
@@ -294,6 +301,7 @@ else
         await setupRoomHub();
         PeerInfo myClientRoomInfo = new PeerInfo(peerName, peerAvatar);
         await hubRoomConnection!.SendAsync("JoinRoom", myClientRoomInfo, roomId);
+
 
         if (receiverName != null)
         {

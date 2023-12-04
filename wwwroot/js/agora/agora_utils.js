@@ -12,17 +12,13 @@ let localTracks = []
 localTracks[0] is audio (voice),
 localTracks[1] is video,
 */
-let remoteUsers = {}
+
+var countRemotePeer = 0;
 
 async function joinAndDisplayLocalStream(uid, typeCall) {
 
-    client.on('user-published', handleUserPublished);
-
-    client.on('user-left', (user) => {
-        console.log(user.uid + " has left the chanel");
-    });
-
     localUid = uid;
+    console.log("uid = " + localUid);
 
     await client.join(APP_ID, CHANNEL, TOKEN, uid);
 
@@ -39,11 +35,26 @@ async function joinAndDisplayLocalStream(uid, typeCall) {
     if (typeCall == "video") {
         // Lấy cả Mic Audio và Camera Video Track
         localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+        // Publish localTracks to Channel
         await client.publish([localTracks[0], localTracks[1]]);
     }
+
+    client.on('user-published', handleUserPublished);
+
+    client.on('user-left', (user) => {
+        console.log(user.uid + " has left the chanel");
+    });
 }
 
 async function handleUserPublished(user, mediaType) {
+    countRemotePeer++;
+
+    if (countRemotePeer > 0) {
+        // Display local video 
+        localTracks[1].play(`peer-${localUid}`);
+    }
+
     await client.subscribe(user, mediaType)
 
     if (mediaType == 'video') {
@@ -77,6 +88,8 @@ async function toggleVideo() {
         await client.publish([localTracks[1]]);
         return;
     }
+
+    console.log("localTracks[1].muted: " + localTracks[1].muted);
 
     if (localTracks[1].muted) {
         await localTracks[1].setMuted(false);

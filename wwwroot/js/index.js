@@ -30,13 +30,13 @@ function moCuaSoGoiDien(callerId, callerName, callerAvt, receiverId, receiverNam
 
     myInstanceObject = instanceObject;
 
-    const top = (screen.height - 800) / 2;
-    const left = (screen.width - 500) / 2;
+    const top = (screen.height - 1280) / 2;
+    const left = (screen.width - 720) / 2;
 
     // Cửa sổ con
     const roomId = callerId + "." + receiverId;
     var urlToOpen = `http://localhost:5241/groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}/${receiverName}`;
-    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=800, height=500");
+    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=1280, height=720");
 
     // Đăng ký sự kiện nhận thông điệp từ cửa sổ con
     window.addEventListener('message', receiveMessageFromGroupCall, false);
