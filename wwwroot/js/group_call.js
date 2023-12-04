@@ -1,4 +1,5 @@
 function tatNhacChuong() {
+    console.log('tatNhacChuong');
     window.opener.postMessage('tatNhacChuong', '*');
 }
 

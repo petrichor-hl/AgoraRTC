@@ -53,11 +53,11 @@ function joinRoomGoiDien(roomId, callerName, callerAvt, typeCall, instanceObject
 
     myInstanceObject = instanceObject;
 
-    const top = (screen.height - 800) / 2;
-    const left = (screen.width - 500) / 2;
+    const top = (screen.height - 1280) / 2;
+    const left = (screen.width - 720) / 2;
 
     var urlToOpen = `http://localhost:5241/groupCall/${roomId}/${callerName}/${callerAvt}/${typeCall}`;
-    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=800, height=500");
+    var childWindow = window.open(urlToOpen, "_blank", "left = " + left + ", top = " + top + ", width=1280, height=720");
 
     window.addEventListener('message', receiveMessageFromGroupCall, false);
 }
@@ -82,6 +82,3 @@ function receiveMessageFromGroupCall(event) {
         window.removeEventListener('message', receiveMessageFromGroupCall, false);
     }
 }
-
-
-

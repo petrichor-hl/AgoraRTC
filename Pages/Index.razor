@@ -95,6 +95,10 @@
 
         });
 
+        hubConnection.On<string>("missingCall", callerId => {
+            // Console.WriteLine("Đã bỏ lỡ cuộc gọi từ " + callerId);
+        });
+
     }
 
     protected override void OnParametersSet()
@@ -163,7 +167,6 @@
             typeCall,
             DotNetObjectReference.Create(this)
             );
-
 
         }
 

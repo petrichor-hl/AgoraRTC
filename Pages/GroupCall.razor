@@ -33,36 +33,53 @@
 }
 else
 {
-    <div class="grid-container px-4 pt-4" style="padding-bottom: 114px">
-    <div id="peer-@hubRoomConnection!.ConnectionId" class="grid-item relative">
-        <div class="d-flex flex-column justify-center align-center absolute avatar-card"
-            style="@(isVideoOn ? "z-index: 0" : "z-index: 1")">
-
-            <img src="@("https://image.tmdb.org/t/p/w440_and_h660_face/" + peerAvatar)" class="avatar-150 mb-4" />
-            <p class="mud-typography-h3" style="color: rgba(89,74,226,1); text-align: center">
-                @peerName
-            </p>
-
-        </div>
-
-    </div>
-    @foreach (var peer in peersInRoom)
-        {
-            <div id="peer-@peer.Key" class="grid-item relative">
-                <div id="peerInfo-@peer.Key" class="d-flex flex-column justify-center align-center absolute avatar-card">
-                    <img src="@("https://image.tmdb.org/t/p/w440_and_h660_face/" + peer.Value.AvatarUrl)"
-                        class="avatar-150 mb-4" />
-                    <p class="mud-typography-h3" style="color: rgba(89,74,226,1); text-align: center">
-                        @peer.Value.Name
-                    </p>
+    <div class="grid-container px-5 pt-5">
+        @foreach (var peer in peersInRoom)
+            {
+                <div id="peer-@peer.Key" class="grid-item relative">
+                    <div id="peerInfo-@peer.Key" class="d-flex flex-column justify-center align-center absolute avatar-card">
+                        <img src="@("https://image.tmdb.org/t/p/w440_and_h660_face/" + peer.Value.AvatarUrl)"
+                            class="avatar-150 mb-4" />
+                        <p class="mud-typography-h3" style="color: rgba(89,74,226,1); text-align: center">
+                            @peer.Value.Name
+                        </p>
+                    </div>
                 </div>
-            </div>
-        }
+            }
     </div>
 }
 
-<div id="controls">
-    @if (status == "Đang gọi ...")
+@if (status == "Đang gọi ...") {
+    <p id="count-down">
+        Kết thúc sau @countdownSeconds giây
+    </p>
+}
+
+
+
+<div id="my-frame">
+    @if (isProcessing) 
+    {
+        <div class="d-flex justify-center align-center avatar-card">
+            <MudProgressCircular Color="Color.Default" Indeterminate="true"/>
+        </div>
+    } else 
+    {
+        <div class="d-flex flex-column justify-center align-center absolute avatar-card"
+            style="@(isVideoOn ? "z-index: -1" : "z-index: 0")">
+
+            <img src="@("https://image.tmdb.org/t/p/w440_and_h660_face/" + peerAvatar)" class="avatar-100 mb-4" />
+            <p class="mud-typography-h3" style="color: rgba(89,74,226,1); text-align: center">
+                @peerName
+            </p>
+        </div>
+    }
+
+</div>
+
+@if (isProcessing == false) {
+    <div id="controls">
+    @if (status == "Đang gọi ..." || status == "Đã kết nối")
     {
         <button id="mic-btn" class="button-27" role="button" style="background-color: rgba(30,200,165,1)"
             @onclick="ToggleMic">
@@ -86,7 +103,7 @@ else
         </button>
 
         <button id="call-end-btn" class="button-27" role="button"
-            style="background-color: rgba(244,67,54,1); margin-inline: 20px" onclick="window.close()">
+            style="background-color: rgba(244,67,54,1); margin-inline: 20px" @onclick="CallEnd">
             <svg xmlns="http:www.w3.org/2000/svg" height="32" width="32"
                 viewBox="0 0 640 512"><!--!Font Awesome Free 6.5.0 by @fontawesome - https:fontawesome.com License - https:fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
                 <path fill="#ffffff"
@@ -130,8 +147,7 @@ else
     }
 
 </div>
-
-
+}
 
 @using Microsoft.AspNetCore.SignalR.Client;
 @using AgoraRTC.Models
@@ -142,6 +158,8 @@ else
 @implements IDisposable
 
 @code {
+
+    public bool isProcessing = true;
 
     [Parameter]
     public string roomId { get; set; } = "";
@@ -171,10 +189,21 @@ else
 
     public bool isVideoOn;
 
+    private int countdownSeconds = 10;
+
+    private Timer? timer;
+
     private HubConnection? hubCallConnection;
     private HubConnection? hubRoomConnection;
 
     private Dictionary<string, PeerInfo> peersInRoom = new();
+
+    [JSInvokable]
+    public void setIsProcessingToFalse() {
+        // Console.WriteLine("setIsProcessingToFalse");
+        isProcessing = false;
+        InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -191,25 +220,30 @@ else
 
         hubCallConnection.On<string>("receiverResponse", response =>
         {
+            timer!.Dispose();
+            timer = null;
+
             JSRuntime.InvokeVoidAsync("tatNhacChuong");
 
             switch (response)
             {
                 case "acceptCall":
+                    status = "Đã kết nối";
                     break;
                 case "rejectCall":
                     status = "Không trả lời";
                     hubRoomConnection!.SendAsync("LeaveRoom", roomId);
                     JSRuntime.InvokeVoidAsync("finishCall");
+                    JSRuntime.InvokeVoidAsync("leaveAndRemoveLocalStream");
                     break;
 
                 case "inAnotherCall":
                     status = "đang ở trong cuộc gọi khác";
                     hubRoomConnection!.SendAsync("LeaveRoom", roomId);
                     JSRuntime.InvokeVoidAsync("finishCall");
+                    JSRuntime.InvokeVoidAsync("leaveAndRemoveLocalStream");
                     break;
             }
-
 
             InvokeAsync(StateHasChanged);
 
@@ -237,7 +271,12 @@ else
             if (isFirst)
             {
                 isFirst = false;
-                await JSRuntime.InvokeVoidAsync("joinAndDisplayLocalStream", hubRoomConnection!.ConnectionId, typeCall);
+                await JSRuntime.InvokeVoidAsync(
+                    "joinAndDisplayLocalStream", 
+                    hubRoomConnection!.ConnectionId, 
+                    typeCall,
+                    DotNetObjectReference.Create(this)
+                );
             }
         });
 
@@ -268,9 +307,9 @@ else
             if (peersInRoom.Count == 0)
             {
                 status = "Cuộc gọi đã kết thúc";
-
                 hubRoomConnection!.SendAsync("LeaveRoom", roomId);
                 JSRuntime.InvokeVoidAsync("finishCall");
+                JSRuntime.InvokeVoidAsync("leaveAndRemoveLocalStream");
             }
             InvokeAsync(StateHasChanged);
         });
@@ -294,6 +333,14 @@ else
         {
             isVideoOn = true;
         }
+
+        if (receiverName == null) {
+            /* 
+            Tức là người tham gia vào cuộc gọi 
+            khác với người đi gọi
+            */
+            status = "Đã kết nối";
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -308,10 +355,54 @@ else
             await setupCallHub();
             PeerInfo myClientCallInfo = new PeerInfo(peerName, peerAvatar);
             await hubCallConnection!.SendAsync("SendCallTo", remoteId, myClientCallInfo, typeCall, roomId);
+            timer = new Timer(Countdown, null, 1000, 1000);
         }
     }
 
-    public void ToggleMic()
+    private void Countdown(object? state)
+    {
+        countdownSeconds--;
+
+        InvokeAsync(StateHasChanged);
+
+        if (countdownSeconds == 0)
+        {
+            // Dừng đồng hồ đếm ngược khi countdown kết thúc
+            timer!.Dispose();
+            timer = null;
+            
+            status = "Không trả lời";
+            InvokeAsync(StateHasChanged);
+
+            hubRoomConnection!.SendAsync("LeaveRoom", roomId);
+
+            handleMissingCall();
+            JSRuntime.InvokeVoidAsync("finishCall");
+
+            JSRuntime.InvokeVoidAsync("leaveAndRemoveLocalStream");
+
+        }
+    }
+
+    public async void handleMissingCall() {
+        // Console.WriteLine("SendMissingCallMessageTo");
+        await hubCallConnection!.SendAsync("SendMissingCallMessageTo", remoteId, peerId);
+        await JSRuntime.InvokeVoidAsync("tatNhacChuong");
+    }
+
+    public async void CallEnd()
+    {
+        // Console.WriteLine("CallEnd()");
+        if (status == "Đang gọi ...") {
+            timer!.Dispose();
+            timer = null;
+            handleMissingCall();
+        }
+
+        await JSRuntime.InvokeVoidAsync("window.close");
+    }
+
+        public void ToggleMic()
     {
         isMicOn = !isMicOn;
         JSRuntime.InvokeVoidAsync("toggleMic");
@@ -322,6 +413,7 @@ else
         isVideoOn = !isVideoOn;
         JSRuntime.InvokeVoidAsync("toggleVideo");
     }
+
 
     public async void Dispose()
     {

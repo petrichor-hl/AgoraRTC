@@ -21,11 +21,6 @@
             <span style="color: rgba(89,74,226,1)">@callerName</span> muốn gọi điện bằng @(typeCall == "voice" ? "giọng nói" : "video") với bạn
         </MudText>
 
-        <MudText Align="Align.Center">
-            từ chối sau @countdownSeconds giây
-        </MudText>
-
-
         <div class="d-flex mt-6 mb-1 justify-space-around">
             <MudIconButton Icon="@Icons.Material.Filled.Cancel" Variant="Variant.Filled" Color="Color.Error"
                 Size="Size.Large" OnClick="Cancel" Class="rounded-circle pa-2" />
@@ -59,31 +54,6 @@
     [Parameter]
     public string? typeCall { get; set; } 
 
-    private int countdownSeconds = 45;
-
-    private Timer? timer;
-
-    protected override void OnInitialized()
-    {
-        timer = new Timer(Countdown, null, 1000, 1000);
-    }
-
-    private void Countdown(object? state)
-    {
-        countdownSeconds--;
-
-        InvokeAsync(StateHasChanged);
-
-        if (countdownSeconds == 0)
-        {
-            // Dừng đồng hồ đếm ngược khi countdown kết thúc
-            timer!.Dispose();
-            // Đóng cửa sổ gọi điện
-            InvokeAsync(Cancel);
-        }
-    }
-
     void Submit() => MudDialog!.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog!.Cancel();
-
 }
