@@ -1,6 +1,5 @@
 const APP_ID = "c5ba0d5021ca49a4989abd70a2bc0ea9";
-const TOKEN = "007eJxTYJghOCtm88pF5rstYu48DT15sOCAsdi6uENu3/a9Sy99zZypwJBsmpRokGJqYGSYnGhiCUQWlolJKeYGiUZJyQapiZYss3JTGwIZGW7OdGJiZIBAEJ+FITcxM4+BAQDQhSEZ";
-// Token expires on December 5, 2023 9:21 AM UTC
+const TOKEN = "007eJxTYPhpMeViMMv86no1N4VlPg4eUg/2PfVL9vupZ/s+p+Irs7oCQ7JpUqJBiqmBkWFyooklEFlYJialmBskGiUlG6QmWl7dVZvaEMjIUPXEl4ERCkF8FobcxMw8BgYAGlAfaA==";
 
 const CHANNEL = "main";
 

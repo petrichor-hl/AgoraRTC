@@ -96,7 +96,8 @@
         });
 
         hubConnection.On<string>("missingCall", callerId => {
-            // Console.WriteLine("Đã bỏ lỡ cuộc gọi từ " + callerId);
+            Console.WriteLine("Đã bỏ lỡ cuộc gọi từ " + callerId);
+            InvokeAsync(() => dialogRef.Close());
         });
 
     }
@@ -127,6 +128,7 @@
         await JSRuntime.InvokeVoidAsync("phatNhacChuong");
     }
 
+    IDialogReference? dialogRef;
 
     public async void OpenNotificationDialog(string callerId, PeerInfo callerInfo, string typeCall, string roomId)
     {
@@ -144,8 +146,8 @@
         keyValues.Add("callerAvt", callerInfo.AvatarUrl);
         keyValues.Add("typeCall", typeCall);
 
-        var dialogResult = DialogService.Show<CallDialog>("", keyValues, options);
-        var result = await dialogResult.Result;
+        dialogRef = DialogService.Show<CallDialog>("", keyValues, options);
+        var result = await dialogRef.Result;
 
         if (result.Canceled)
         {
